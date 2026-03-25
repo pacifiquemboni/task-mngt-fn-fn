@@ -251,7 +251,9 @@ export default function Dashboard() {
         task={selectedTask}
         onClose={closeDetail}
         onDelete={selectedTask ? () => deleteTask(selectedTask.id) : undefined}
+        onUpdated={(updated) => setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))}
       />
+
     </div>
   );
 }
