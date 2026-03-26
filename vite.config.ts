@@ -167,4 +167,17 @@ export default defineConfig({
     // Increase the chunk warning threshold (vendor-calendar is large)
     chunkSizeWarningLimit: 250,
   },
+
+  // Dev server proxy so `/api` requests are forwarded to the backend during
+  // development. This makes API requests same-origin and allows the service
+  // worker to intercept/cache them during local testing.
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

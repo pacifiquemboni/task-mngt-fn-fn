@@ -1,7 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  // Use a relative `/api` URL by default so the service worker can intercept
+  // requests and cache API responses. Set `VITE_API_URL` only when you need
+  // to target a different origin (production with a proxy or same-origin API).
+  baseURL: import.meta.env.VITE_API_URL || "/api",
 });
 
 // Attach JWT token automatically to every request
