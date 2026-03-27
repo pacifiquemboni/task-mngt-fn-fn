@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import api from "../api/axios";
-import type { Task, Tag } from "../types";
+import type { Task, Tag, TaskStatus } from "../types";
 import { useOnlineStatus } from "../hooks/usePwa";
 import TaskCard from "../components/TaskCard";
 import TagBadge from "../components/TagBadge";
@@ -71,6 +71,22 @@ export default function Dashboard() {
     await api.delete(`/tasks/${id}`);
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  const updateTaskStatus = useCallback(async (id: string, status: TaskStatus) => {
+    const currentTask = tasks.find((task) => task.id === id);
+    if (!currentTask || currentTask.status === status) return;
+
+    const previousStatus = currentTask.status;
+    setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, status } : task)));
+
+    try {
+      const res = await api.put(`/tasks/${id}`, { status });
+      setTasks((prev) => prev.map((task) => (task.id === id ? res.data : task)));
+      setSelectedTask((prev) => (prev && prev.id === id ? res.data : prev));
+    } catch {
+      setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, status: previousStatus } : task)));
+    }
+  }, [tasks]);
 
   // Filter + sort (nearest deadline first)
   const filteredTasks = useMemo(() => {
@@ -214,6 +230,8 @@ export default function Dashboard() {
                   task={task}
                   onClick={() => setSelectedTask(task)}
                   onDelete={() => deleteTask(task.id)}
+                  onStatusChange={(status) => updateTaskStatus(task.id, status)}
+                  disableStatusChange={!isOnline}
                 />
               ))}
             </div>
@@ -233,6 +251,8 @@ export default function Dashboard() {
                   task={task}
                   onClick={() => setSelectedTask(task)}
                   onDelete={() => deleteTask(task.id)}
+                  onStatusChange={(status) => updateTaskStatus(task.id, status)}
+                  disableStatusChange={!isOnline}
                 />
               ))}
             </div>

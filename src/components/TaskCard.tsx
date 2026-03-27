@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 import { format, isPast, isToday } from "date-fns";
-import type { Task } from "../types";
+import type { Task, TaskStatus } from "../types";
+import { TASK_STATUS_LABELS, TASK_STATUS_OPTIONS } from "../types";
 import TagBadge from "./TagBadge";
 import ConfirmModal from "./ConfirmModal";
 
@@ -8,13 +9,21 @@ interface Props {
   task: Task;
   onClick?: () => void;
   onDelete?: () => void;
+  onStatusChange?: (status: TaskStatus) => void;
+  disableStatusChange?: boolean;
 }
 
-export default memo(function TaskCard({ task, onClick, onDelete }: Props) {
+export default memo(function TaskCard({ task, onClick, onDelete, onStatusChange, disableStatusChange }: Props) {
   const [showConfirm, setShowConfirm] = useState(false);
   const due = new Date(task.dueDate);
   const overdue = isPast(due) && !isToday(due);
   const dueToday = isToday(due);
+  const statusPillClass: Record<TaskStatus, string> = {
+    PENDING: "bg-gray-100 text-gray-700",
+    PROGRESS: "bg-amber-500/15 text-amber-600",
+    DONE: "bg-gray-900 text-white",
+    CANCELLED: "bg-red-50 text-red-600 border border-red-200",
+  };
 
   return (
     <div
@@ -52,6 +61,28 @@ export default memo(function TaskCard({ task, onClick, onDelete }: Props) {
       <p className="text-gray-800 font-medium text-sm leading-relaxed mb-3 pr-6">
         {task.content}
       </p>
+
+      <div className="mb-3 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+        <span
+          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusPillClass[task.status]}`}
+        >
+          {TASK_STATUS_LABELS[task.status]}
+        </span>
+        {onStatusChange && (
+          <select
+            value={task.status}
+            onChange={(e) => onStatusChange(e.target.value as TaskStatus)}
+            disabled={disableStatusChange}
+            className="bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs text-gray-900 disabled:opacity-50"
+          >
+            {TASK_STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {TASK_STATUS_LABELS[status]}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {/* Meta row */}
       <div className="flex items-center justify-between gap-2">
