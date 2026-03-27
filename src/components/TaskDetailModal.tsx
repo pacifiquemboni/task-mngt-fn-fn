@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format, isPast, isToday } from "date-fns";
-import type { Task, Tag } from "../types";
+import type { Task, Tag, TaskStatus } from "../types";
 import TagBadge from "./TagBadge";
 import ConfirmModal from "./ConfirmModal";
 import api from "../api/axios";
@@ -22,6 +22,7 @@ export default function TaskDetailModal({ task, onClose, onDelete, onUpdated }: 
   const [content, setContent] = useState("");
   const [startDate, setStartDate] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [status, setStatus] = useState<TaskStatus>("PENDING");
   const [tagId, setTagId] = useState<string | null>(null);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loadingSave, setLoadingSave] = useState(false);
@@ -35,6 +36,7 @@ export default function TaskDetailModal({ task, onClose, onDelete, onUpdated }: 
     setContent(task.content);
     setStartDate(format(new Date(task.startDate), "yyyy-MM-dd"));
     setDueDate(format(new Date(task.dueDate), "yyyy-MM-dd"));
+    setStatus(task.status ?? "PENDING");
     setTagId(task.tagId ?? null);
   }, [task]);
 
@@ -44,6 +46,20 @@ export default function TaskDetailModal({ task, onClose, onDelete, onUpdated }: 
   }, [editing]);
 
   if (!task) return null;
+
+  const statusLabel: Record<TaskStatus, string> = {
+    PENDING: "Pending",
+    PROGRESS: "In progress",
+    DONE: "Done",
+    CANCELLED: "Cancelled",
+  };
+
+  const statusPillClass: Record<TaskStatus, string> = {
+    PENDING: "bg-gray-100 text-gray-700",
+    PROGRESS: "bg-amber-500/15 text-amber-600",
+    DONE: "bg-gray-900 text-white",
+    CANCELLED: "bg-red-50 text-red-600 border border-red-200",
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -64,12 +80,36 @@ export default function TaskDetailModal({ task, onClose, onDelete, onUpdated }: 
           </div>
 
           {/* Status */}
-          {overdue && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600 mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              This task is overdue
+          <div className="mb-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Status</span>
+              {!editing ? (
+                <span
+                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusPillClass[task.status]}`}
+                >
+                  {statusLabel[task.status]}
+                </span>
+              ) : (
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as TaskStatus)}
+                  className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900"
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="PROGRESS">In progress</option>
+                  <option value="DONE">Done</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+              )}
             </div>
-          )}
+
+            {overdue && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600 flex items-center gap-2">
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                This task is overdue
+              </div>
+            )}
+          </div>
 
           {/* Content */}
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
@@ -200,6 +240,7 @@ export default function TaskDetailModal({ task, onClose, onDelete, onUpdated }: 
                       setContent(task.content);
                       setStartDate(format(new Date(task.startDate), "yyyy-MM-dd"));
                       setDueDate(format(new Date(task.dueDate), "yyyy-MM-dd"));
+                      setStatus(task.status ?? "PENDING");
                       setTagId(task.tagId ?? null);
                     }
                   }}
@@ -236,6 +277,7 @@ export default function TaskDetailModal({ task, onClose, onDelete, onUpdated }: 
                         startDate: new Date(startDate).toISOString(),
                         dueDate: new Date(dueDate).toISOString(),
                         tagId,
+                        status,
                       });
                       setEditing(false);
                       onClose();
